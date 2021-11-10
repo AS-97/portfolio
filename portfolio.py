@@ -57,7 +57,6 @@ def SortMinToMax(Data):
     #print(list_of_column,list_of_date)
     return Data
 
-
 def GenerateTab(SortedData):
     list_of_date = []
     list_of_column = []
@@ -65,33 +64,37 @@ def GenerateTab(SortedData):
         if list_of_date.count(SortedData[h][DATE]) == 0: list_of_date.append(SortedData[h][DATE])
         if list_of_column.count(SortedData[h][COLUMN_NAME]) == 0: list_of_column.append(SortedData[h][COLUMN_NAME])
     list_of_column = sorted(list_of_column)
-    list_of_column.append("Total[CZK]")
     list_of_date = sorted(list_of_date)
+
 
     tab = ["date"]
     for column in list_of_column:
         tab.append(column)
+    tab.append("Total[CZK]")
     Tab = [tab]
     for date in list_of_date:
-        tab_line = []
-        tab_line.append(date)
-        for c in range(len(list_of_column)):
-            tab_line.append("-")
-        for line in SortedData:
-            if date in line:
-                i = 1
-                tab_line[i] = 0
-                for column in list_of_column:
-                    if column in line and tab_line[i] == "-":
-                        tab_line[i] = line[3]
-                    if column == "Total[CZK]":
-                        if tab_line[i] == "-":
-                            tab_line[i] = float(line[4])
-                        else:
-                            tab_line[i] = tab_line[i] + float(line[4])
-                    i += 1 
-        Tab.append(tab_line)
+        line = [date]
+        total = 0
+        for column in list_of_column:
+            amount, in_czk  = Find_in_line(SortedData, date, column)
+            line.append(amount)
+            total += float(in_czk)
+        line.append(total)
+        Tab.append(line)
+
+
+    #print(Tab)
     return Tab
+
+
+def Find_in_line(SortedData, line_name, column_name):
+    for line in SortedData:
+        if column_name in line and line_name in line:
+            return line[3], line[4]
+    return "-", 0
+
+
+
     
 def PrintTab(Tab):
     width = 20
@@ -99,8 +102,11 @@ def PrintTab(Tab):
         for x in r:
             print("{0:<{w}}".format(x,w=width),end="")
         print("")
-
-                
+        if r[0] == "date":
+            for x in r:
+                print("{0:-<{w}}".format("",w=width),end="")
+            print("")
+        
 
 
            
@@ -137,6 +143,30 @@ def GetData(Tab):
             f.close()
 
 
+    while True:
+        n = input("Zadejte novou položku (př.: Coinbase[BTC]):")
+        if not n:
+            break
+        amount = input("Zaadejte sumu pro {0}:".format(n))
+        if amount:
+            try:
+                sat, czk = to_sats(float(amount),n[n.find("[")+1:n.find("]")])
+            except:
+                sat, czk = 0, 0
+        if not amount:
+            try:
+                amount = last_line[i]
+                sat, czk = to_sats(float(amount),n[n.find("[")+1:n.find("]")])
+            except:
+                amount = "-"
+                czk = 0#"""
+        time_stamp = str(datetime.datetime.now()).replace(":","-").replace(" ","_")
+        f = open(filename, "a", encoding="utf8")
+        f.write("{0}:{1}:{2}:{3}:{4}\n".format(date,n,time_stamp,amount,czk))            
+        f.close()
+
+
+
 def to_sats(a, m,url='https://blockchain.info/ticker'):
     eur = requests.get(url).json()['EUR']['15m']
     czk = requests.get(url).json()['CZK']['15m']
@@ -165,6 +195,7 @@ def to_sats(a, m,url='https://blockchain.info/ticker'):
  
 #SortMinToMax(Data)
 
+
 while True:
 
     filename='portfolio_data.txt'
@@ -180,6 +211,7 @@ while True:
     GetData(MyTab)
 
 #print(MyTab[len(MyTab)-1])
+#"""
 
 
 
